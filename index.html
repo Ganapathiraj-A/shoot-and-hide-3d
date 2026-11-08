@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>SHOOT &amp; HIDE — 3D Sniper Cover Duel vs AI</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="three.min.js"></script>
+</head>
+<body>
+  <div id="app-shell">
+    <!-- 3D WebGL Battle Canvas -->
+    <div id="canvas-wrap"></div>
+
+    <!-- Sniper Scope Overlay (Active when holding & dragging during Sniping Turn) -->
+    <div id="scope-overlay" class="hidden">
+      <div class="scope-lens">
+        <div class="crosshair-h"></div>
+        <div class="crosshair-v"></div>
+        <div class="scope-mil-dots"></div>
+        <div class="scope-center-dot"></div>
+      </div>
+      <div class="scope-hint">DRAG TO AIM • RELEASE TO FIRE!</div>
+    </div>
+
+    <!-- Yellow Polka-Dot Curtain Warning (Shown during HIDE! countdown just like Frame 45) -->
+    <div id="curtain-warning" class="hidden"></div>
+
+    <!-- Floating Damage, Cash & Hit Popups -->
+    <div id="popup-layer" aria-live="polite"></div>
+
+    <!-- Center Hit Callout Diamond (HEADSHOT / BODY SHOT / HANDSHOT / SHIELD BLOCK) -->
+    <div id="hit-callout" class="hidden">
+      <div class="diamond-badge" id="diamond-badge">
+        <span class="diamond-icon" id="callout-icon">🎯</span>
+      </div>
+      <div class="callout-label" id="callout-label">HEADSHOT</div>
+    </div>
+
+    <!-- ==================== LOBBY / MAIN MENU SCREEN ==================== -->
+    <section id="lobby-screen" class="screen-layer">
+      <!-- Top Currency & Trophy Bar -->
+      <header class="lobby-top">
+        <div class="stat-box trophy-box">
+          <span class="stat-icon">🏆</span>
+          <span id="lobby-trophies">34,295</span>
+        </div>
+        <div class="stat-group-right">
+          <div class="stat-box cash-box">
+            <span class="stat-icon">💵</span>
+            <span id="lobby-cash">151,000</span>
+          </div>
+          <div class="stat-box gem-box">
+            <span class="stat-icon">💎</span>
+            <span id="lobby-gems">10</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Player Profile & Trophy Chest Progress -->
+      <div class="profile-row">
+        <div class="avatar-card">
+          <div class="avatar-face">🧑🏻</div>
+          <span class="avatar-name">Player_3260</span>
+        </div>
+        <div class="chest-progress-card">
+          <div class="chest-info">
+            <span class="chest-nums">🏆 <span id="chest-prog-text">34295/34350</span></span>
+            <div class="segmented-bar" id="chest-seg-bar"></div>
+          </div>
+          <button type="button" id="btn-claim-chest" class="chest-btn" title="Open Supply Crate">📦</button>
+        </div>
+        <button type="button" id="btn-open-settings" class="gear-btn" aria-label="Settings">⚙️</button>
+      </div>
+
+      <!-- Main Tab Content: Battle Arena Selector -->
+      <main id="tab-battle" class="tab-content active">
+        <div class="logo-banner">
+          <span class="logo-shoot">SHOOT</span>
+          <span class="logo-amp">&amp;</span>
+          <span class="logo-hide">HIDE</span>
+        </div>
+
+        <div class="arena-card-wrap">
+          <button type="button" id="btn-prev-arena" class="carousel-arrow" aria-label="Previous Arena">❮</button>
+
+          <div class="arena-card" id="arena-card">
+            <div class="area-pill" id="arena-area-tag">📍 AREA 8</div>
+            <h2 class="arena-title" id="arena-name">Night Temple</h2>
+            <div class="arena-preview" id="arena-preview">
+              <div class="arena-preview-art" id="arena-preview-art"></div>
+              <div class="arena-ai-tag" id="arena-ai-tag">🤖 AI Bot: SanneSau 🇳🇴</div>
+            </div>
+            <button type="button" id="btn-start-match" class="start-btn">START</button>
+          </div>
+
+          <button type="button" id="btn-next-arena" class="carousel-arrow" aria-label="Next Arena">❯</button>
+        </div>
+      </main>
+
+      <!-- Tab Content: Gear & Merge Loadout (Frame 20) -->
+      <main id="tab-gear" class="tab-content hidden">
+        <div class="gear-showcase">
+          <div class="gear-col">
+            <div class="gear-slot" data-slot="helmet">
+              <span class="slot-icon">🪖</span>
+              <span class="slot-lvl" id="lvl-helmet">LV.30</span>
+            </div>
+            <div class="gear-slot" data-slot="vest">
+              <span class="slot-icon">🦺</span>
+              <span class="slot-lvl" id="lvl-vest">LV.30</span>
+            </div>
+            <div class="gear-slot" data-slot="pants">
+              <span class="slot-icon">👖</span>
+              <span class="slot-lvl" id="lvl-pants">LV.30</span>
+            </div>
+          </div>
+
+          <div class="character-preview-box">
+            <div class="char-figure">🥷</div>
+            <div class="char-stats-row">
+              <div class="char-stat-pill atk">💥 ATK <span id="gear-atk-val">739</span></div>
+              <div class="char-stat-pill hp">❤️ HP <span id="gear-hp-val">1881</span></div>
+            </div>
+          </div>
+
+          <div class="gear-col">
+            <div class="gear-slot weapon" data-slot="rifle">
+              <span class="slot-icon">🔭</span>
+              <span class="slot-lvl" id="lvl-rifle">LV.30</span>
+            </div>
+            <div class="gear-slot" data-slot="gloves">
+              <span class="slot-icon">🧤</span>
+              <span class="slot-lvl" id="lvl-gloves">LV.30</span>
+            </div>
+            <div class="gear-slot" data-slot="boots">
+              <span class="slot-icon">👟</span>
+              <span class="slot-lvl" id="lvl-boots">LV.30</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="gear-upgrade-panel">
+          <p class="upgrade-desc">Upgrade your Sniper Rifle &amp; Tactical Armor with Cash to boost ATK damage and max HP against Elite AI Snipers!</p>
+          <div class="upgrade-actions">
+            <button type="button" id="btn-upgrade-atk" class="upg-btn atk-btn">
+              <span>⬆️ UPGRADE RIFLE (+65 ATK)</span>
+              <strong id="cost-atk">💵 2,500</strong>
+            </button>
+            <button type="button" id="btn-upgrade-hp" class="upg-btn hp-btn">
+              <span>⬆️ UPGRADE ARMOR (+180 HP)</span>
+              <strong id="cost-hp">💵 2,500</strong>
+            </button>
+          </div>
+        </div>
+      </main>
+
+      <!-- Bottom Navigation Bar -->
+      <nav class="bottom-nav">
+        <button type="button" class="nav-item" data-tab="gear">
+          <span class="nav-icon">🔫</span>
+          <span class="nav-label">Gear</span>
+        </button>
+        <button type="button" class="nav-item active" data-tab="battle">
+          <span class="nav-icon">🎯</span>
+          <span class="nav-label">Battle</span>
+        </button>
+        <button type="button" class="nav-item" id="btn-free-cash">
+          <span class="nav-badge">FREE</span>
+          <span class="nav-icon">💵</span>
+          <span class="nav-label">+5,000 Cash</span>
+        </button>
+      </nav>
+    </section>
+
+    <!-- ==================== MATCHMAKING RADAR OVERLAY (Frame 24-27) ==================== -->
+    <section id="matchmaking-screen" class="screen-layer hidden">
+      <div class="mm-box">
+        <h2 id="mm-status-title">Finding an opponent...</h2>
+
+        <div id="mm-globe-wrap" class="globe-radar">
+          <div class="globe-sphere">🌍</div>
+          <div class="radar-sweep"></div>
+          <span class="radar-dot dot-1"></span>
+          <span class="radar-dot dot-2"></span>
+          <span class="radar-dot dot-3"></span>
+        </div>
+
+        <div id="mm-vs-cards" class="vs-cards-row hidden">
+          <div class="vs-card player">
+            <div class="vs-avatar">🧑🏻 <span class="flag-badge">🇮🇳</span></div>
+            <div class="vs-name">Player_3260</div>
+            <div class="vs-stat">🏆 <span id="vs-p-trophy">34,295</span></div>
+            <div class="vs-stat">💥 <span id="vs-p-atk">739</span></div>
+            <div class="vs-stat">❤️ <span id="vs-p-hp">1,881</span></div>
+          </div>
+
+          <div class="vs-divider">VS</div>
+
+          <div class="vs-card enemy">
+            <div class="vs-avatar"><span id="vs-ai-Emoji">🧔🏼</span> <span class="flag-badge" id="vs-ai-flag">🇳🇴</span></div>
+            <div class="vs-name" id="vs-ai-name">SanneSau</div>
+            <div class="vs-stat">🏆 <span id="vs-ai-trophy">34,359</span></div>
+            <div class="vs-stat">💥 <span id="vs-ai-atk">780</span></div>
+            <div class="vs-stat">❤️ <span id="vs-ai-hp">2,200</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== IN-GAME BATTLE HUD (Frame 30, 35, 45) ==================== -->
+    <section id="battle-hud" class="hud-layer hidden">
+      <!-- Top VS Health Bars -->
+      <div class="top-vs-bars">
+        <!-- Player Bar -->
+        <div class="fighter-hud player-side">
+          <div class="fighter-portrait">🧑🏻</div>
+          <div class="fighter-bars">
+            <div class="fighter-name">🇮🇳 Player_3260</div>
+            <div class="hp-bar-outer">
+              <div class="hp-bar-fill" id="player-hp-fill"></div>
+              <span class="hp-bar-text" id="player-hp-text">1881</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Opponent Bar -->
+        <div class="fighter-hud enemy-side">
+          <div class="fighter-bars">
+            <div class="fighter-name" id="hud-ai-name">SanneSau 🇳🇴</div>
+            <div class="hp-bar-outer">
+              <div class="hp-bar-fill enemy" id="ai-hp-fill"></div>
+              <span class="hp-bar-text" id="ai-hp-text">2190</span>
+            </div>
+          </div>
+          <div class="fighter-portrait enemy" id="hud-ai-portrait">🧔🏼</div>
+        </div>
+      </div>
+
+      <!-- Ammo Counter (3 Rifle Cartridges under active shooter) -->
+      <div class="ammo-rack player-ammo" id="player-ammo-rack"></div>
+      <div class="ammo-rack ai-ammo" id="ai-ammo-rack"></div>
+
+      <!-- Phase Banner ("HIDE!", "ENEMY IS SHOOTING", "ENEMY IS HIDING", "YOUR TURN TO SHOOT!") -->
+      <div class="phase-banner-wrap">
+        <div class="phase-banner" id="phase-banner">HIDE!</div>
+        <div class="countdown-circle hidden" id="countdown-circle">3</div>
+      </div>
+
+      <!-- Stance Toggle Controls (Standing / Crouching / Prone) + Movement Joystick Hint during HIDE & DODGE -->
+      <div id="dodge-controls" class="dodge-controls">
+        <div class="stance-selector" aria-label="Character Stance">
+          <button type="button" class="stance-btn" data-stance="stand" title="Stand Up (Fastest Sprint)">🏃</button>
+          <button type="button" class="stance-btn active" data-stance="crouch" title="Crouch (Low Cover)">🧎</button>
+          <button type="button" class="stance-btn" data-stance="prone" title="Prone Crawl (Hide Behind Short Walls)">匍</button>
+        </div>
+
+        <div class="move-pad-wrap">
+          <button type="button" id="btn-move-left" class="move-arrow-btn" aria-label="Run Left">◀ LEFT</button>
+          <div class="joystick- puck-area" id="joystick-zone">
+            <div class="joystick-knob" id="joystick-knob"></div>
+            <span class="joy-label">DRAG OR A/D TO HIDE &amp; DODGE</span>
+          </div>
+          <button type="button" id="btn-move-right" class="move-arrow-btn" aria-label="Run Right">RIGHT ▶</button>
+        </div>
+      </div>
+
+      <!-- Sniper Controls Hint during SHOOT Phase -->
+      <div id="shoot-controls-hint" class="shoot-controls-hint hidden">
+        <div class="scope-badge-prompt">🔭 HOLD &amp; DRAG ANYWHERE TO SCOPE AIM • RELEASE TO FIRE!</div>
+      </div>
+    </section>
+
+    <!-- ==================== VICTORY / DEFEAT END SCREEN (Frame 69, Late 30) ==================== -->
+    <section id="result-screen" class="screen-layer hidden">
+      <div class="result-card">
+        <div class="result-header-banner" id="result-banner">VICTORY!</div>
+        <p class="result-subtitle" id="result-subtitle">You eliminated the AI Sniper!</p>
+
+        <div class="reward-boxes">
+          <div class="reward-item">
+            <span class="rew-icon">💵</span>
+            <span class="rew-val" id="rew-cash">+3,500</span>
+          </div>
+          <div class="reward-item">
+            <span class="rew-icon">🏆</span>
+            <span class="rew-val" id="rew-trophies">+35</span>
+          </div>
+        </div>
+
+        <div class="result-summary" id="result-summary">
+          Headshots: 1 • Body Shots: 2 • Cover Blocks: 3
+        </div>
+
+        <div class="result-buttons">
+          <button type="button" id="btn-claim-x2" class="claim-btn blue">🎬 x2 CLAIM</button>
+          <button type="button" id="btn-claim-normal" class="claim-btn green">CLAIM</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Native Settings Dialog (Following modern-web-guidance dialog & light-dismiss-a-dialog) -->
+    <dialog id="settings-dialog" closedby="any" aria-labelledby="settings-title">
+      <div class="dialog-inner">
+        <div class="dialog-top">
+          <h2 id="settings-title">BATTLE SETTINGS</h2>
+          <form method="dialog">
+            <button type="submit" class="dialog-close" aria-label="Close">✕</button>
+          </form>
+        </div>
+
+        <div class="settings-rows">
+          <label class="set-row">
+            <span>🔊 Sound Effects &amp; Sniper Audio</span>
+            <input type="checkbox" id="chk-sfx" checked />
+          </label>
+          <label class="set-row">
+            <span>🤖 AI Opponent Difficulty</span>
+            <select id="sel-ai-diff">
+              <option value="rookie">Rookie AI (Slow Aim, Frequent Peek)</option>
+              <option value="pro" selected>Pro AI (Smart Cover &amp; Laser Tracking)</option>
+              <option value="elite">Elite Marksman (Deadly Headshot Hunter)</option>
+            </select>
+          </label>
+          <label class="set-row">
+            <span>🔦 Show AI Red Sniper Laser Sight</span>
+            <input type="checkbox" id="chk-laser" checked />
+          </label>
+        </div>
+
+        <div class="rules-panel">
+          <h3>How Shoot &amp; Hide Works</h3>
+          <ul>
+            <li><strong>Turn-Based 1v1 Sniper Duel vs AI:</strong> Each round alternates between <strong>SNIPING (3 bullets)</strong> and <strong>HIDING &amp; DODGING</strong>.</li>
+            <li><strong>When AI is Shooting:</strong> Watch the AI's red laser beam! Run Left/Right (`A`/`D`, arrows, or touch drag) and switch stances (<strong>Stand 🏃, Crouch 🧎, Prone 匍</strong>) to stay behind destructible walls and bamboo cover, while grabbing floating <strong>💵 Cash, 🏆 Trophies, and ➕ Medkits</strong>!</li>
+            <li><strong>When You are Shooting:</strong> Hold &amp; drag anywhere on screen to open your <strong>Sniper Scope</strong>. Watch where the AI hides during the countdown, then shoot through gaps or shatter their cover to score <strong>HEADSHOTS (1.6x DMG)</strong>, <strong>BODY SHOTS (1.0x)</strong>, or <strong>HAND/LEG SHOTS (0.7x)</strong>!</li>
+          </ul>
+        </div>
+
+        <form method="dialog" class="dialog-bottom">
+          <button type="submit" class="start-btn small" autofocus>SAVE &amp; CLOSE</button>
+        </form>
+      </div>
+    </dialog>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
